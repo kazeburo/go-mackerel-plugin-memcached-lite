@@ -148,12 +148,13 @@ func memcachedStats(opts connectionOpts) (st int) {
 		return
 	}
 
-	tmpDir := os.TempDir()
-	curUser, _ := user.Current()
-	prevPath := filepath.Join(tmpDir, curUser.Uid+fmt.Sprintf("-mackerel-plugin-memcached-lite-%s-%s", opts.Host, opts.Port))
 	now := int64(time.Now().Unix())
 	stats["_time_"] = now
 
+	tmpDir := os.TempDir()
+	curUser, _ := user.Current()
+	prevPath := filepath.Join(tmpDir, fmt.Sprintf("%s-memcached-lite-%s-%s", curUser.Uid, opts.Host, opts.Port))
+	
 	if !fileExists(prevPath) {
 		err = writeStats(prevPath, stats)
 		if err != nil {
