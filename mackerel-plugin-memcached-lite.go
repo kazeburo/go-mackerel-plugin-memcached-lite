@@ -51,7 +51,12 @@ func slurp(conn net.Conn, timeout float64) ([]byte, error) {
 	return buf, nil
 }
 
-func fetchStats(conn net.Conn, stats map[string]int64, timeout float64) error {
+func fetchStats(conn net.Conn, command string, stats map[string]int64, timeout float64) error {
+	err := write(conn, []byte(command), timeout)
+	if err != nil {
+		return err
+	}
+
 	buf, err := slurp(conn, timeout)
 	if err != nil {
 		return err
@@ -98,7 +103,7 @@ func loadStats(filename string, stats map[string]int64) error {
 
 	reader := csv.NewReader(file)
 	reader.Comma = '\t'
-	reader.LazyQuotes = true // ダブルクオートを厳密にチェックしない！
+	reader.LazyQuotes = true
 	for {
 		record, err := reader.Read()
 		if err == io.EOF {
@@ -126,23 +131,13 @@ func memcachedStats(opts connectionOpts) (st int) {
 	defer conn.Close()
 
 	stats := make(map[string]int64)
-	err = write(conn, []byte("stats\r\n"), opts.Timeout)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to send command: %s\n", err.Error())
-		return
-	}
-	err = fetchStats(conn, stats, opts.Timeout)
+	err = fetchStats(conn, "stats\r\n", stats, opts.Timeout)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to fetch stats: %s\n", err.Error())
 		return
 	}
 
-	err = write(conn, []byte("stats settings\r\n"), opts.Timeout)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to send command: %s\n", err.Error())
-		return
-	}
-	err = fetchStats(conn, stats, opts.Timeout)
+	err = fetchStats(conn, "stats settings\r\n", stats, opts.Timeout)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to fetch stats settings: %s\n", err.Error())
 		return
@@ -154,7 +149,7 @@ func memcachedStats(opts connectionOpts) (st int) {
 	tmpDir := os.TempDir()
 	curUser, _ := user.Current()
 	prevPath := filepath.Join(tmpDir, fmt.Sprintf("%s-memcached-lite-%s-%s", curUser.Uid, opts.Host, opts.Port))
-	
+
 	if !fileExists(prevPath) {
 		err = writeStats(prevPath, stats)
 		if err != nil {
@@ -187,12 +182,10 @@ func memcachedStats(opts connectionOpts) (st int) {
 	// request
 	m := map[string]string{"req-per-sec.get": "cmd_get", "req-per-sec.set": "cmd_set", "eviction-per-sec.total": "evictions", "eviction-per-sec.unfetched": "evicted_unfetched"}
 	for key, skey := range m {
-		//fmt.Fprintf(os.Stderr, "[debug] %s = %d - %d / %d\n", skey, stats[skey], prev[skey], period)
 		gap := stats[skey] - prev[skey]
 		if gap < 0 {
 			gap = stats[skey]
 		}
-		//fmt.Fprintf(os.Stderr, "[debug] %s = %d - %d | %d | %d\n", skey, stats[skey], prev[skey], gap, gap/period)
 		fmt.Printf("memcached-lite.%s\t%f\t%d\n", key, float64(gap)/float64(period), now)
 	}
 
