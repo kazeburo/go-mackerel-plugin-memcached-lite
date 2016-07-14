@@ -68,7 +68,6 @@ func fetchStats(conn net.Conn, command string, stats map[string]int64, timeout f
 			if err != nil {
 				return err
 			}
-			// fmt.Fprintf(os.Stderr, "%s==%s\n",match[1],match[2]);
 			stats[match[1]] = i
 		}
 	}
@@ -94,7 +93,6 @@ func writeStats(filename string, stats map[string]int64) error {
 }
 
 func loadStats(filename string, stats map[string]int64) error {
-	fmt.Fprintf(os.Stderr, filename)
 	file, err := os.Open(filename)
 	if err != nil {
 		return err
