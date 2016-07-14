@@ -169,7 +169,6 @@ func memcachedStats(opts connectionOpts) (st int) {
 	}
 
 	period := stats["_time_"] - prev["_time_"]
-	fmt.Fprintf(os.Stderr, "[debug] %d\n", period)
 
 	// cache usage
 	fmt.Printf("memcached-lite.cache-usage-byte.used\t%d\t%d\n", stats["bytes"], now)
@@ -221,8 +220,7 @@ func memcachedStats(opts connectionOpts) (st int) {
 
 func memcachedDef(opts connectionOpts) (st int) {
 	st = 0
-	// # mackerel-agent-plugin
-	str := `
+	str := `# mackerel-agent-plugin
 {
   "graphs": {
     "memcached-lite.cache-usage-byte": {
