@@ -1,0 +1,4 @@
+package: github.com/kazeburo/go-mackerel-plugin-memcached-lite
+import:
+- package: github.com/jessevdk/go-flags
+  version: ^1.0.0
